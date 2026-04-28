@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Claims — Visit &amp; bill prototype</title>
+  <style>
+    :root {
+      --wire-bg: #f2f2f2;
+      --wire-paper: #fff;
+      --wire-ink: #222;
+      --wire-muted: #666;
+      --wire-line: #333;
+      --wire-dash: #999;
+      --header-h: 48px;
+      --nav-h: 52px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --accent: #1a5f7a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--wire-ink);
+      background: #c8c8c8;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 12px 36px;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 390px;
+      min-height: 760px;
+      background: var(--wire-bg);
+      border: 3px solid var(--wire-line);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-label {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      font-size: 11px;
+      color: var(--wire-muted);
+    }
+
+    .top-bar {
+      flex-shrink: 0;
+      height: var(--header-h);
+      border-bottom: 2px dashed var(--wire-dash);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 8px;
+      background: var(--wire-paper);
+    }
+    .back-btn {
+      width: 36px;
+      height: 32px;
+      border: 2px solid var(--wire-line);
+      background: transparent;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .back-btn.visible { display: flex; }
+    .top-bar-title {
+      flex: 1;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .top-bar-note {
+      font-size: 10px;
+      color: var(--wire-muted);
+      max-width: 42%;
+      text-align: right;
+    }
+
+    .screen-stack {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 12px 12px calc(12px + var(--safe-bottom));
+      -webkit-overflow-scrolling: touch;
+    }
+    .screen.active { display: flex; }
+
+    .wf-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--wire-muted);
+      margin-bottom: 6px;
+    }
+
+    .visit-card {
+      background: var(--wire-paper);
+      border: 2px solid var(--wire-line);
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      font: inherit;
+      color: inherit;
+    }
+    .visit-card:active { background: #fafafa; }
+    .visit-card .date {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .visit-card .reason {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .visit-card .provider {
+      color: var(--wire-muted);
+      font-size: 12px;
+    }
+    .visit-card .meta {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--wire-dash);
+      font-size: 11px;
+      color: var(--wire-muted);
+    }
+
+    .detail-hero {
+      background: var(--wire-paper);
+      border: 2px solid var(--wire-line);
+      border-radius: 4px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .detail-hero .date { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+    .detail-hero h1 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .detail-hero .provider-name { color: var(--wire-muted); font-size: 13px; }
+    .detail-hero .claim-id {
+      margin-top: 10px;
+      font-size: 10px;
+      color: var(--wire-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .bill-section {
+      background: var(--wire-paper);
+      border: 2px solid var(--wire-line);
+      border-radius: 4px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .bill-section > .section-head {
+      padding: 10px 12px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--wire-muted);
+      border-bottom: 1px dashed var(--wire-dash);
+      background: #fafafa;
+    }
+
+    .agg {
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .agg:last-child { border-bottom: none; }
+    .agg-toggle {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      color: inherit;
+    }
+    .agg-toggle:active { background: #f5f5f5; }
+    .agg-chev {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--wire-line);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+      transition: transform 0.15s ease;
+    }
+    .agg.open .agg-chev { transform: rotate(90deg); }
+    .agg-body { flex: 1; min-width: 0; }
+    .agg-title { font-weight: 700; margin-bottom: 2px; }
+    .agg-sub { font-size: 11px; color: var(--wire-muted); }
+    .agg-total {
+      flex-shrink: 0;
+      font-weight: 700;
+      text-align: right;
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    .agg-lines {
+      display: none;
+      padding: 0 12px 12px 44px;
+      border-top: 1px dashed #eee;
+    }
+    .agg.open .agg-lines { display: block; }
+    .line-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+      font-size: 12px;
+      border-bottom: 1px dotted #ddd;
+    }
+    .line-row:last-child { border-bottom: none; }
+    .line-row .lbl { color: var(--wire-muted); }
+    .line-row .amt { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+    .bill-foot {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      font-weight: 700;
+      border-top: 2px dashed var(--wire-dash);
+      background: #fafafa;
+      font-variant-numeric: tabular-nums;
+    }
+    .bill-foot .hint {
+      font-weight: 400;
+      font-size: 10px;
+      color: var(--wire-muted);
+      margin-top: 4px;
+    }
+
+    .empty-hint {
+      font-size: 11px;
+      color: var(--wire-muted);
+      padding: 8px 0 16px;
+      border: 1px dashed var(--wire-dash);
+      padding: 12px;
+      background: var(--wire-paper);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <span class="phone-label">Mobile prototype — claims by visit</span>
+    <header class="top-bar">
+      <button type="button" class="back-btn" id="backBtn" aria-label="Back to list">←</button>
+      <div class="top-bar-title" id="topTitle">Your visits</div>
+      <div class="top-bar-note" id="topNote">Sorted by date</div>
+    </header>
+    <div class="screen-stack">
+      <div class="screen active" id="listScreen" aria-live="polite"></div>
+      <div class="screen" id="detailScreen"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      /** Demo claims: provider, reason for visit, date, grouped bill lines */
+      const claims = [
+        {
+          id: "CLM-2026-08421",
+          dateISO: "2026-03-12",
+          reason: "Outpatient surgery — knee arthroscopy",
+          provider: "Riverside Orthopedic Surgery Center",
+          providerRole: "Facility & surgical team",
+          groups: [
+            {
+              title: "Surgery & facility",
+              subtitle: "Surgeon, anesthesia, OR, equipment, recovery",
+              total: 18420.0,
+              lines: [
+                { label: "Surgeon (professional)", amount: 3200.0 },
+                { label: "Surgical assistant", amount: 850.0 },
+                { label: "Anesthesiologist", amount: 1100.0 },
+                { label: "Operating room", amount: 4200.0 },
+                { label: "Surgical supplies &amp; equipment", amount: 2890.0 },
+                { label: "Recovery / PACU", amount: 980.0 },
+                { label: "Facility fee (outpatient)", amount: 5200.0 },
+              ],
+            },
+            {
+              title: "Imaging &amp; labs",
+              subtitle: "Pre-op diagnostics",
+              total: 612.5,
+              lines: [
+                { label: "MRI — knee", amount: 475.0 },
+                { label: "Pre-op blood panel", amount: 137.5 },
+              ],
+            },
+            {
+              title: "Physical therapy (referral)",
+              subtitle: "Same episode, separate visits billed later",
+              total: 0,
+              lines: [
+                { label: "No charges on this claim", amount: 0 },
+              ],
+            },
+          ],
+        },
+        {
+          id: "CLM-2026-03102",
+          dateISO: "2026-02-03",
+          reason: "Emergency visit — abdominal pain",
+          provider: "Metro General Hospital — Emergency Dept.",
+          providerRole: "Hospital & emergency physicians",
+          groups: [
+            {
+              title: "Emergency transport",
+              subtitle: "Ambulance & paramedic care",
+              total: 1850.0,
+              lines: [
+                { label: "Ambulance — base rate", amount: 900.0 },
+                { label: "Mileage / transport", amount: 280.0 },
+                { label: "ALS assessment &amp; treatment", amount: 670.0 },
+              ],
+            },
+            {
+              title: "Emergency department",
+              subtitle: "Facility, physician, nursing, supplies",
+              total: 6430.0,
+              lines: [
+                { label: "ED facility fee", amount: 2800.0 },
+                { label: "Emergency physician", amount: 1450.0 },
+                { label: "Nursing &amp; monitoring", amount: 620.0 },
+                { label: "IV fluids &amp; medications", amount: 380.0 },
+                { label: "Supplies &amp; equipment", amount: 1180.0 },
+              ],
+            },
+            {
+              title: "Diagnostics",
+              subtitle: "Tests ordered in the ED",
+              total: 892.0,
+              lines: [
+                { label: "CT abdomen / pelvis", amount: 720.0 },
+                { label: "Labs — metabolic panel", amount: 172.0 },
+              ],
+            },
+          ],
+        },
+        {
+          id: "CLM-2025-21988",
+          dateISO: "2025-11-18",
+          reason: "Office visit — annual wellness",
+          provider: "Dr. Jordan Ellis, MD — Primary care",
+          providerRole: "Physician office",
+          groups: [
+            {
+              title: "Office visit",
+              subtitle: "Professional &amp; preventive services",
+              total: 265.0,
+              lines: [
+                { label: "Preventive visit (physician)", amount: 0 },
+                { label: "Vaccine administration", amount: 45.0 },
+                { label: "Influenza vaccine", amount: 35.0 },
+                { label: "Facility / office overhead", amount: 185.0 },
+              ],
+            },
+          ],
+        },
+      ];
+
+      function formatDate(iso) {
+        const d = new Date(iso + "T12:00:00");
+        return d.toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function money(n) {
+        if (n === 0) return "$0.00";
+        return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
+      }
+
+      function claimTotal(c) {
+        return c.groups.reduce((s, g) => s + g.total, 0);
+      }
+
+      const listScreen = document.getElementById("listScreen");
+      const detailScreen = document.getElementById("detailScreen");
+      const backBtn = document.getElementById("backBtn");
+      const topTitle = document.getElementById("topTitle");
+      const topNote = document.getElementById("topNote");
+
+      const sorted = [...claims].sort((a, b) => (a.dateISO < b.dateISO ? 1 : -1));
+
+      function renderList() {
+        listScreen.innerHTML =
+          '<p class="wf-label">Tap a visit to see the bill breakdown</p>' +
+          sorted
+            .map(
+              (c) => `
+          <button type="button" class="visit-card" data-id="${c.id}">
+            <div class="date">${formatDate(c.dateISO)}</div>
+            <div class="reason">${c.reason}</div>
+            <div class="provider">${c.provider}</div>
+            <div class="meta">Claim ${c.id} · Billed ${money(claimTotal(c))}</div>
+          </button>`
+            )
+            .join("") +
+          '<p class="empty-hint">Aggregates like ambulance, surgeons, and equipment appear as one row; expand to see every component.</p>';
+        listScreen.querySelectorAll(".visit-card").forEach((btn) => {
+          btn.addEventListener("click", () => openClaim(btn.getAttribute("data-id")));
+        });
+      }
+
+      function renderDetail(c) {
+        const total = claimTotal(c);
+        const groupsHtml = c.groups
+          .map(
+            (g, i) => `
+          <div class="agg" id="agg-${c.id}-${i}">
+            <button type="button" class="agg-toggle" aria-expanded="false">
+              <span class="agg-chev" aria-hidden="true">›</span>
+              <div class="agg-body">
+                <div class="agg-title">${g.title}</div>
+                <div class="agg-sub">${g.subtitle}</div>
+              </div>
+              <div class="agg-total">${money(g.total)}</div>
+            </button>
+            <div class="agg-lines" hidden>
+              ${g.lines
+                .map(
+                  (l) => `
+                <div class="line-row">
+                  <span class="lbl">${l.label}</span>
+                  <span class="amt">${money(l.amount)}</span>
+                </div>`
+                )
+                .join("")}
+            </div>
+          </div>`
+          )
+          .join("");
+
+        detailScreen.innerHTML = `
+          <div class="detail-hero">
+            <div class="date">${formatDate(c.dateISO)}</div>
+            <h1>${c.reason}</h1>
+            <div class="provider-name">${c.provider}</div>
+            <div class="provider-name" style="margin-top:4px;font-size:11px;">${c.providerRole}</div>
+            <div class="claim-id">Claim ID ${c.id}</div>
+          </div>
+          <p class="wf-label">Bill components</p>
+          <div class="bill-section">
+            <div class="section-head">Grouped charges (expand for detail)</div>
+            ${groupsHtml}
+            <div class="bill-foot">
+              <div>
+                <div>Total billed (this claim)</div>
+                <div class="hint">Plan discounts &amp; your share on next screen (prototype)</div>
+              </div>
+              <div>${money(total)}</div>
+            </div>
+          </div>
+        `;
+
+        detailScreen.querySelectorAll(".agg-toggle").forEach((toggle) => {
+          const wrap = toggle.closest(".agg");
+          const panel = toggle.nextElementSibling;
+          toggle.addEventListener("click", () => {
+            const open = wrap.classList.toggle("open");
+            toggle.setAttribute("aria-expanded", open);
+            panel.hidden = !open;
+          });
+        });
+      }
+
+      function openClaim(id) {
+        const c = claims.find((x) => x.id === id);
+        if (!c) return;
+        renderDetail(c);
+        listScreen.classList.remove("active");
+        detailScreen.classList.add("active");
+        backBtn.classList.add("visible");
+        topTitle.textContent = "Visit detail";
+        topNote.textContent = c.id;
+      }
+
+      function closeDetail() {
+        detailScreen.classList.remove("active");
+        listScreen.classList.add("active");
+        backBtn.classList.remove("visible");
+        topTitle.textContent = "Your visits";
+        topNote.textContent = "Sorted by date";
+      }
+
+      backBtn.addEventListener("click", closeDetail);
+
+      renderList();
+    })();
+  </script>
+</body>
+</html>
