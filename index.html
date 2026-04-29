@@ -522,11 +522,8 @@
             <div class="aggregation-pill">Collection · ${c.aggregatedClaimCount} claims aggregated</div>
             <div class="date">${formatDate(c.dateISO)}</div>
             <div class="reason">${c.reason}</div>
-            <div class="provider">${c.provider}</div>
             <div class="meta">
-              <strong>Collection ID</strong> ${c.id}
-              <br />
-              <strong>Claims on file</strong> ${c.claimIdsReceived.length} (${c.claimIdsReceived.join(", ")})
+              <strong>Claims on file</strong> ${c.claimIdsReceived.length} of ${c.aggregatedClaimCount} expected
               <br />
               <strong>Billed to date</strong> ${money(total)}${
               incomplete
@@ -611,9 +608,9 @@
             <h1>${c.reason}</h1>
             <div class="provider-name">${c.provider}</div>
             <div class="provider-name" style="margin-top:4px;font-size:11px;">${c.providerRole}</div>
-            <div class="claim-id">Collection ${c.id} · aggregates ${c.aggregatedClaimCount} claims (${c.claimIdsReceived.length} on file): ${c.claimIdsReceived.join(
-          ", "
-        )}</div>
+            <p class="wf-label" style="margin-top:14px;margin-bottom:6px;">Claims on file (reference numbers)</p>
+            <div class="claim-id">Collection ${c.id}</div>
+            <div class="claim-id" style="margin-top:6px;">${c.claimIdsReceived.map((id) => id).join(" · ")}</div>
           </div>
           ${companionBlock}
           <p class="wf-label">Bill components (grouped charges)</p>
