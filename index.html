@@ -149,6 +149,46 @@
       font-size: 11px;
       color: var(--wire-muted);
     }
+    .visit-card .aggregation-pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      border: 1px solid var(--wire-line);
+      padding: 3px 6px;
+      border-radius: 2px;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .visit-card.pending-claim {
+      border-style: solid;
+      border-width: 2px;
+      border-color: #b8860b;
+      box-shadow: inset 0 0 0 1px rgba(184, 134, 11, 0.25);
+    }
+    .pending-strip {
+      background: rgba(184, 134, 11, 0.12);
+      border: 1px dashed #a67c00;
+      padding: 8px;
+      margin: 10px -4px -4px -4px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--wire-ink);
+    }
+    .pending-strip strong { font-weight: 700; color: #5c4300; }
+    .estimate-range {
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+    .aggregate-caveat {
+      font-size: 10px;
+      color: #8a6900;
+      margin-top: 6px;
+      font-weight: 700;
+    }
 
     .detail-hero {
       background: var(--wire-paper);
@@ -265,6 +305,35 @@
       color: var(--wire-muted);
       margin-top: 4px;
     }
+    .bill-foot.incomplete-foot {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .bill-foot.incomplete-foot > div:last-child {
+      flex: 1 1 100%;
+      text-align: right;
+      font-weight: 400;
+      font-size: 11px;
+      color: #5c4300;
+    }
+    .info-callout {
+      background: rgba(184, 134, 11, 0.1);
+      border: 1px dashed #b8860b;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--wire-ink);
+    }
+    .info-callout .callout-head {
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b5400;
+      margin-bottom: 6px;
+    }
 
     .empty-hint {
       font-size: 11px;
@@ -282,7 +351,7 @@
     <header class="top-bar">
       <button type="button" class="back-btn" id="backBtn" aria-label="Back to list">←</button>
       <div class="top-bar-title" id="topTitle">Your visits</div>
-      <div class="top-bar-note" id="topNote">Sorted by date</div>
+      <div class="top-bar-note" id="topNote">By date · collections roll up claims</div>
     </header>
     <div class="screen-stack">
       <div class="screen active" id="listScreen" aria-live="polite"></div>
@@ -292,14 +361,25 @@
 
   <script>
     (function () {
-      /** Demo claims: provider, reason for visit, date, grouped bill lines */
-      const claims = [
+      /** Each item is a *collection*: one row that aggregates multiple underlying claims into one episode. */
+      const collections = [
         {
-          id: "CLM-2026-08421",
+          id: "COL-2026-KNEE",
           dateISO: "2026-03-12",
           reason: "Outpatient surgery — knee arthroscopy",
           provider: "Riverside Orthopedic Surgery Center",
           providerRole: "Facility & surgical team",
+          aggregatedClaimCount: 4,
+          claimIdsReceived: ["CLM-2026-08421", "CLM-2026-08440", "CLM-2026-08471"],
+          incompleteCompanionClaim: {
+            title: "Expected claim not processed yet",
+            body:
+              "Episodes like this usually include another claim tied to this visit—for example anesthesia billing from a separate group—which we haven’t received yet.",
+            estimateLow: 850,
+            estimateHigh: 2400,
+            expectedLabel:
+              "Typical anesthesia / ancillary claim for outpatient surgery (estimate only; not a guarantee of coverage or final price).",
+          },
           groups: [
             {
               title: "Surgery & facility",
@@ -310,13 +390,13 @@
                 { label: "Surgical assistant", amount: 850.0 },
                 { label: "Anesthesiologist", amount: 1100.0 },
                 { label: "Operating room", amount: 4200.0 },
-                { label: "Surgical supplies &amp; equipment", amount: 2890.0 },
+                { label: "Surgical supplies & equipment", amount: 2890.0 },
                 { label: "Recovery / PACU", amount: 980.0 },
                 { label: "Facility fee (outpatient)", amount: 5200.0 },
               ],
             },
             {
-              title: "Imaging &amp; labs",
+              title: "Imaging & labs",
               subtitle: "Pre-op diagnostics",
               total: 612.5,
               lines: [
@@ -328,18 +408,23 @@
               title: "Physical therapy (referral)",
               subtitle: "Same episode, separate visits billed later",
               total: 0,
-              lines: [
-                { label: "No charges on this claim", amount: 0 },
-              ],
+              lines: [{ label: "No charges on this claim", amount: 0 }],
             },
           ],
         },
         {
-          id: "CLM-2026-03102",
+          id: "COL-2026-ED-ABD",
           dateISO: "2026-02-03",
           reason: "Emergency visit — abdominal pain",
           provider: "Metro General Hospital — Emergency Dept.",
           providerRole: "Hospital & emergency physicians",
+          aggregatedClaimCount: 9,
+          claimIdsReceived: [
+            "CLM-2026-03102",
+            "CLM-2026-03118",
+            "CLM-2026-03120",
+            "CLM-2026-03127",
+          ],
           groups: [
             {
               title: "Emergency transport",
@@ -348,7 +433,7 @@
               lines: [
                 { label: "Ambulance — base rate", amount: 900.0 },
                 { label: "Mileage / transport", amount: 280.0 },
-                { label: "ALS assessment &amp; treatment", amount: 670.0 },
+                { label: "ALS assessment & treatment", amount: 670.0 },
               ],
             },
             {
@@ -358,9 +443,9 @@
               lines: [
                 { label: "ED facility fee", amount: 2800.0 },
                 { label: "Emergency physician", amount: 1450.0 },
-                { label: "Nursing &amp; monitoring", amount: 620.0 },
-                { label: "IV fluids &amp; medications", amount: 380.0 },
-                { label: "Supplies &amp; equipment", amount: 1180.0 },
+                { label: "Nursing & monitoring", amount: 620.0 },
+                { label: "IV fluids & medications", amount: 380.0 },
+                { label: "Supplies & equipment", amount: 1180.0 },
               ],
             },
             {
@@ -375,15 +460,17 @@
           ],
         },
         {
-          id: "CLM-2025-21988",
+          id: "COL-2025-AWV",
           dateISO: "2025-11-18",
           reason: "Office visit — annual wellness",
           provider: "Dr. Jordan Ellis, MD — Primary care",
           providerRole: "Physician office",
+          aggregatedClaimCount: 2,
+          claimIdsReceived: ["CLM-2025-21988", "CLM-2025-22001"],
           groups: [
             {
               title: "Office visit",
-              subtitle: "Professional &amp; preventive services",
+              subtitle: "Professional & preventive services",
               total: 265.0,
               lines: [
                 { label: "Preventive visit (physician)", amount: 0 },
@@ -411,8 +498,8 @@
         return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
       }
 
-      function claimTotal(c) {
-        return c.groups.reduce((s, g) => s + g.total, 0);
+      function collectionTotal(col) {
+        return col.groups.reduce((s, g) => s + g.total, 0);
       }
 
       const listScreen = document.getElementById("listScreen");
@@ -421,30 +508,55 @@
       const topTitle = document.getElementById("topTitle");
       const topNote = document.getElementById("topNote");
 
-      const sorted = [...claims].sort((a, b) => (a.dateISO < b.dateISO ? 1 : -1));
+      const sorted = [...collections].sort((a, b) => (a.dateISO < b.dateISO ? 1 : -1));
 
       function renderList() {
-        listScreen.innerHTML =
-          '<p class="wf-label">Tap a visit to see the bill breakdown</p>' +
-          sorted
-            .map(
-              (c) => `
-          <button type="button" class="visit-card" data-id="${c.id}">
+        let html =
+          '<p class="wf-label">Each row is a <strong>collection</strong>—we combine multiple related claims (same visit or episode) into one place. Line items below group charges like ambulance, surgeons, and equipment.</p>';
+        html += sorted
+          .map((c) => {
+            const incomplete = c.incompleteCompanionClaim;
+            const total = collectionTotal(c);
+            const cardClass = incomplete ? "visit-card pending-claim" : "visit-card";
+            let inner = `
+            <div class="aggregation-pill">Collection · ${c.aggregatedClaimCount} claims aggregated</div>
             <div class="date">${formatDate(c.dateISO)}</div>
             <div class="reason">${c.reason}</div>
             <div class="provider">${c.provider}</div>
-            <div class="meta">Claim ${c.id} · Billed ${money(claimTotal(c))}</div>
-          </button>`
-            )
-            .join("") +
-          '<p class="empty-hint">Aggregates like ambulance, surgeons, and equipment appear as one row; expand to see every component.</p>';
+            <div class="meta">
+              <strong>Collection ID</strong> ${c.id}
+              <br />
+              <strong>Claims on file</strong> ${c.claimIdsReceived.length} (${c.claimIdsReceived.join(", ")})
+              <br />
+              <strong>Billed to date</strong> ${money(total)}${
+              incomplete
+                ? ` <span class="aggregate-caveat">— sum likely not complete</span>`
+                : ""
+            }`;
+            if (incomplete) {
+              inner += `<br /><span class="estimate-range">Est. for missing claim: ${money(incomplete.estimateLow)}–${money(
+                incomplete.estimateHigh
+              )}</span>`;
+              inner += `<div class="pending-strip">
+                <strong>${incomplete.title}</strong><br />
+                ${incomplete.body}
+              </div>`;
+            }
+            inner += `</div>`;
+            return `<button type="button" class="${cardClass}" data-id="${c.id}">${inner}</button>`;
+          })
+          .join("");
+        html +=
+          '<p class="empty-hint">Within a visit, expandable rows bundle related services. Your total for a collection may grow as more claims from the same episode arrive.</p>';
+        listScreen.innerHTML = html;
         listScreen.querySelectorAll(".visit-card").forEach((btn) => {
-          btn.addEventListener("click", () => openClaim(btn.getAttribute("data-id")));
+          btn.addEventListener("click", () => openCollection(btn.getAttribute("data-id")));
         });
       }
 
       function renderDetail(c) {
-        const total = claimTotal(c);
+        const total = collectionTotal(c);
+        const incomplete = c.incompleteCompanionClaim;
         const groupsHtml = c.groups
           .map(
             (g, i) => `
@@ -472,24 +584,57 @@
           )
           .join("");
 
+        const companionBlock = incomplete
+          ? `<div class="info-callout">
+            <div class="callout-head">Missing claim (not received yet)</div>
+            <p style="margin:0 0 8px;">${incomplete.body}</p>
+            <div class="estimate-range">Estimated range for that claim: ${money(incomplete.estimateLow)}–${money(
+              incomplete.estimateHigh
+            )}</div>
+            <p style="margin:8px 0 0;font-size:11px;color:var(--wire-muted);">${incomplete.expectedLabel}</p>
+          </div>`
+          : "";
+
+        const footClass = incomplete ? "bill-foot incomplete-foot" : "bill-foot";
+        const footPrimary = incomplete
+          ? "Total billed so far (received claims only)"
+          : "Total billed (this collection)";
+        const footCaveatLong = incomplete
+          ? `This total is likely not complete—claims like this typically include another bill we have not received yet. Rough additional range shown above (${money(
+              incomplete.estimateLow
+            )}–${money(incomplete.estimateHigh)}).`
+          : "";
+
         detailScreen.innerHTML = `
           <div class="detail-hero">
             <div class="date">${formatDate(c.dateISO)}</div>
             <h1>${c.reason}</h1>
             <div class="provider-name">${c.provider}</div>
             <div class="provider-name" style="margin-top:4px;font-size:11px;">${c.providerRole}</div>
-            <div class="claim-id">Claim ID ${c.id}</div>
+            <div class="claim-id">Collection ${c.id} · aggregates ${c.aggregatedClaimCount} claims (${c.claimIdsReceived.length} on file): ${c.claimIdsReceived.join(
+          ", "
+        )}</div>
           </div>
-          <p class="wf-label">Bill components</p>
+          ${companionBlock}
+          <p class="wf-label">Bill components (grouped charges)</p>
           <div class="bill-section">
-            <div class="section-head">Grouped charges (expand for detail)</div>
+            <div class="section-head">Expand rows to see underlying line items</div>
             ${groupsHtml}
-            <div class="bill-foot">
+            <div class="${footClass}">
               <div>
-                <div>Total billed (this claim)</div>
-                <div class="hint">Plan discounts &amp; your share on next screen (prototype)</div>
+                <div>${footPrimary}</div>
+                <div class="hint">${
+                  incomplete
+                    ? "Totals will update when the pending claim arrives."
+                    : "Plan discounts &amp; your share on next screen (prototype)."
+                }</div>
               </div>
               <div>${money(total)}</div>
+              ${
+                incomplete
+                  ? `<div>${footCaveatLong}</div>`
+                  : ""
+              }
             </div>
           </div>
         `;
@@ -505,8 +650,8 @@
         });
       }
 
-      function openClaim(id) {
-        const c = claims.find((x) => x.id === id);
+      function openCollection(id) {
+        const c = collections.find((x) => x.id === id);
         if (!c) return;
         renderDetail(c);
         listScreen.classList.remove("active");
@@ -521,7 +666,7 @@
         listScreen.classList.add("active");
         backBtn.classList.remove("visible");
         topTitle.textContent = "Your visits";
-        topNote.textContent = "Sorted by date";
+        topNote.textContent = "By date · collections roll up claims";
       }
 
       backBtn.addEventListener("click", closeDetail);
